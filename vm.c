@@ -18,20 +18,20 @@
 #define SUB     0x04
 #define HALT    0xff
 
+#define PC 0x00
 #define R1 0x01
 #define R2 0x02
 
 struct Vm {
-    uint8_t r1;
-    uint8_t r2;
-    uint8_t pc;
+    /* [PC, R1, R2] */
+    uint8_t regs[3];
 };
 
 struct Vm vm_init() {
     struct Vm vm;
-    vm.r1 = 0;
-    vm.r2 = 0;
-    vm.pc = 0;
+    vm.regs[PC] = 0;
+    vm.regs[R1] = 0;
+    vm.regs[R2] = 0;
     return vm;
 }
 
@@ -83,7 +83,7 @@ void instr_free(struct Instr instr) {
 void fetch(struct Vm vm, uint8_t mem[256], struct RawInstr *raw_instr) {
     /* instructions start in index 8 of the main memory */
     uint16_t offset = 8;
-    uint16_t instr_idx = vm.pc + offset;
+    uint16_t instr_idx = vm.regs[PC] + offset;
     if (instr_idx >= 256) {
         printf("error: tried to fetch address bigger than main memory\n");
         exit(1);
@@ -143,7 +143,7 @@ void decode(struct RawInstr raw_instr, struct Instr *instr) {
 }
 
 void execute(struct Vm *vm, struct Instr instr, uint8_t mem[256]) {
-    uint8_t reg, res, arg1, arg2, instr_count;
+    uint8_t instr_count;
     struct LoadInstr *load;
     struct StoreInstr *store;
     struct AddInstr *add;
@@ -152,61 +152,22 @@ void execute(struct Vm *vm, struct Instr instr, uint8_t mem[256]) {
     switch (instr.kind) {
         case LOAD:
             load = (struct LoadInstr *) instr.inner;
-            if (load->reg == R1) {
-                vm->r1 = mem[load->addr];
-            } else if (load->reg == R2) {
-                vm->r2 = mem[load->addr];
-            }
+            vm->regs[load->reg] = mem[load->addr];
             instr_count = 3;
             break;
         case STORE:
             store = (struct StoreInstr *) instr.inner;
-            if (store->reg == R1) {
-                reg = vm->r1;
-            } else if (store->reg == R2) {
-                reg = vm->r2;
-            }
-            mem[store->addr] = reg;
+            mem[store->addr] = vm->regs[store->reg];
             instr_count = 3;
             break;
         case ADD:
             add = (struct AddInstr *) instr.inner;
-            if (add->a == R1) {
-                arg1 = vm->r1;
-            } else if (add->a == R2) {
-                arg1 = vm->r1;
-            }
-            if (add->b == R1) {
-                arg2 = vm->r1;
-            } else if (add->b == R2) {
-                arg2 = vm->r2;
-            }
-            res = arg1 + arg2;
-            if (add->a == R1) {
-                vm->r1 = res;
-            } else if (add->a == R2) {
-                vm->r2 = res;
-            }
+            vm->regs[add->a] += vm->regs[add->b];
             instr_count = 3;
             break;
         case SUB:
             sub = (struct SubInstr *) instr.inner;
-            if (sub->a == R1) {
-                arg1 = vm->r1;
-            } else if (sub->a == R2) {
-                arg1 = vm->r1;
-            }
-            if (sub->b == R1) {
-                arg2 = vm->r1;
-            } else if (sub->b == R2) {
-                arg2 = vm->r2;
-            }
-            res = arg1 - arg2;
-            if (sub->a == R1) {
-                vm->r1 = res;
-            } else if (sub->a == R2) {
-                vm->r2 = res;
-            }
+            vm->regs[sub->a] -= vm->regs[sub->b];
             instr_count = 3;
             break;
         case HALT:
@@ -217,7 +178,7 @@ void execute(struct Vm *vm, struct Instr instr, uint8_t mem[256]) {
             printf("error: unknown instruction %d\n", instr.kind);
             exit(1);
     }
-    vm->pc += instr_count;
+    vm->regs[PC] += instr_count;
 }
 
 void mem_print(uint8_t mem[256]) {
