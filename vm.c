@@ -29,7 +29,8 @@ struct Vm {
 
 struct Vm vm_init() {
     struct Vm vm;
-    vm.regs[PC] = 0;
+    /* instructions start in index 8 of the main memory */
+    vm.regs[PC] = 8;
     vm.regs[R1] = 0;
     vm.regs[R2] = 0;
     return vm;
@@ -81,9 +82,7 @@ void instr_free(struct Instr instr) {
 
 /* raw_instr: out */
 void fetch(struct Vm vm, uint8_t mem[256], struct RawInstr *raw_instr) {
-    /* instructions start in index 8 of the main memory */
-    uint16_t offset = 8;
-    uint16_t instr_idx = vm.regs[PC] + offset;
+    uint16_t instr_idx = vm.regs[PC];
     if (instr_idx >= 256) {
         printf("error: tried to fetch address bigger than main memory\n");
         exit(1);
