@@ -100,6 +100,7 @@ void fetch(struct Vm vm, uint8_t mem[256], struct RawInstr *raw_instr) {
     }
 }
 
+/* instr: out */
 void decode(struct RawInstr raw_instr, struct Instr *instr) {
     struct LoadInstr *load;
     struct StoreInstr *store;
