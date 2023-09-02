@@ -29,7 +29,7 @@ struct Vm {
 
 struct Vm vm_init() {
     struct Vm vm;
-    /* instructions start in index 8 of the main memory */
+    /* instructions start at index 8 of the main memory */
     vm.regs[PC] = 8;
     vm.regs[R1] = 0;
     vm.regs[R2] = 0;
